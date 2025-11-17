@@ -70,6 +70,9 @@ results/
 
 # wandb
 wandb/
+
+#cache 
+__pycache__/
 # PyPI configuration file
 .pypirc
 *.pt
