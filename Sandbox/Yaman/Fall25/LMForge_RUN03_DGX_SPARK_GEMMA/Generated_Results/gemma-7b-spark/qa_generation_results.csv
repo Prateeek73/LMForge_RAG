@@ -1,0 +1,5 @@
+chunk_size,questions_num,qa_count_mismatch,total_questions,max_tokens,total_chunks,success_count,fail_count,repeat_count,duplicate_count,elapsed_time
+128,2,4,1616,128,1800,806,994,0,18,17:30:03.417661
+128,2,4,1616,128,1800,806,994,0,18,17:30:03.417661
+128,2,14,2278,256,1800,1128,672,2,22,"1 day, 5:37:59.243396"
+128,2,12,1115,512,900,544,356,1,4,21:36:07.547990
