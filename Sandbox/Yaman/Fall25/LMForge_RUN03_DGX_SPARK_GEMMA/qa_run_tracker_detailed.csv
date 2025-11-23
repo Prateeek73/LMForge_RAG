@@ -1,0 +1,5 @@
+chunk_size,questions_num,qa_count_mismatch,total_questions,max_tokens,total_chunks,success_count,fail_count,repeat_count,duplicate_count,elapsed_time
+128,0,4,1616,128,1800,806,994,0,18,0
+128,0,14,2278,256,1800,1128,672,2,22,0
+128,0,12,1115,512,900,544,356,1,4,0
+128,0,5,659,1024,436,327,108,1,6,0
