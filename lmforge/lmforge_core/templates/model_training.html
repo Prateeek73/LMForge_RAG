@@ -4,8 +4,65 @@
 {% block title %} Model Training {% endblock %}
 
 {% block content %}
+<head>
+  <style>
+    .radio-group {
+      display: flex;          /* puts items in one horizontal line */
+      gap: 10px;              /* space between the options */
+    }
+
+    .radio-group label {
+      cursor: pointer;        /* makes text clickable */
+    }
+  </style>
+</head>
 
 <h1>Configure Model Training</h1>
+<div class="radio-group">
+    <input type="radio" id="decoder" name="enc_dec" value="Decoder" checked>
+    <label for="decoder">Decoder</label>
+
+    <input type="radio" id="encoder" name="enc_dec" value="Encoder">
+    <label for="encoder">Encoder</label>
+
+</div>
+<div id="encoder-form" style="display:none; margin-top:20px;">
+    <form method="POST" action="" id="encoder-train-form">
+        {% csrf_token %}
+        <label for="model_name">Model Name</label>
+        <select id="model_name" name="model_name">
+        <option value="bert">BERT</option>
+        </select>
+        <br>
+        <label>Learning Rate:</label>
+        <input type="number" step="0.00001" name="learning_rate" value="2e-5">
+        <br>
+        <label>Number of Epochs:</label>
+        <input type="number" name="num_epochs" value="3">
+        <br>
+        <label>Batch Size:</label>
+        <input type="number" name="batch_size" value="1">
+        <br>
+        <label for="model_repo">Model Repository Name:</label>
+        <input type="text" name="model_repo" placeholder="e.g., OpenFinAL/your-model-name">
+        <br>
+
+        <!-- Dataset Selection -->
+        <label for="dataset_name">Dataset Name:</label>
+        <input type="text" id="dataset_name" name="dataset_name" placeholder="e.g., FinGPT/fingpt-fiqa_qa"
+            value="FinGPT/fingpt-fiqa_qa">
+        <br>
+
+        <!-- Train-Test Split Ratio -->
+        <label for="train_test_split_ratio">Train-Test Split Ratio:</label>
+        <input type="number" step="0.01" id="train_test_split_ratio" name="train_test_split_ratio" value="0.1" min="0.01"
+            max="0.99">
+        <br>
+        <button type="submit">Start Training</button>
+    </form>
+</div>
+
+<div id="decoder-form" style="margin-top:20px;">
 <form method="POST" action="" id="train-form">
     {% csrf_token %}
     <label for="model_name">Model Name</label>
@@ -98,6 +155,7 @@
 
     <button type="submit">Start Training</button>
 </form>
+</div>
 
 <h2>Training Logs</h2>
 <div id="log-container">Waiting for logs...</div>
@@ -115,7 +173,27 @@
             document.getElementById('bf16').value = (precision === 'bf16') ? 'on' : 'off';
         });
 
-         // Handle model name selection to show/hide custom model input
+        // Radio toggle logic
+        const encoderRadio = document.getElementById("encoder");
+        const decoderRadio = document.getElementById("decoder");
+        const encoderForm = document.getElementById("encoder-form");
+        const decoderForm = document.getElementById("decoder-form");
+
+        function updateFormVisibility() {
+            if (encoderRadio.checked) {
+                encoderForm.style.display = "block";
+                decoderForm.style.display = "none";
+            } else {
+                encoderForm.style.display = "none";
+                decoderForm.style.display = "block";
+            }
+        }
+
+        encoderRadio.addEventListener("change", updateFormVisibility);
+        decoderRadio.addEventListener("change", updateFormVisibility);
+        updateFormVisibility();
+
+        // Handle model name selection to show/hide custom model input
         const modelNameSelect = document.getElementById('model_name');
         const customModelInput = document.getElementById('custom_model_name');
         customModelInput.style.display = 'none'; // Hide by default
