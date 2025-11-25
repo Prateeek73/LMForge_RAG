@@ -1,0 +1,7 @@
+chunk_size,questions_num,qa_count_mismatch,total_questions,max_tokens,total_chunks,success_count,fail_count,repeat_count,duplicate_count,elapsed_time
+128,2,0,0,256,0,0,0,0,0,0:00:00.000184
+128,2,0,0,256,0,0,0,0,0,0:00:00.000184
+128,2,211,891,512,1800,551,1249,0,0,"2 days, 10:27:38.279978"
+128,2,0,0,256,0,0,0,0,0,0:00:00.000184
+128,2,211,891,512,1800,551,1249,0,0,"2 days, 10:27:38.279978"
+128,2,204,892,1024,1800,548,1252,0,0,"2 days, 21:55:39.736723"
