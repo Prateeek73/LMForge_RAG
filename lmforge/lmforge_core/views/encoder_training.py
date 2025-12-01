@@ -24,11 +24,22 @@ def train_encoder_view(request):
             project_name = request.POST.get("project_name", "encoder_training_project")
             model_repo = request.POST.get("model_repo", "OpenFinAL/your-encoder-model")
 
-            wandb_key = request.POST.get("wandb_key") or DEFAULT_WANDB_API_KEY
-            hf_key = request.POST.get("hf_key") or DEFAULT_HF_API_KEY
+            # Prefer explicitly provided keys from the form; fall back to configured defaults.
+            # Treat empty strings as missing (strip whitespace) because decouple may return
+            # empty values if .env contains keys with empty values.
+            wandb_key_post = (request.POST.get("wandb_key") or "").strip()
+            hf_key_post = (request.POST.get("hf_key") or "").strip()
 
-            if not wandb_key or not hf_key:
-                return JsonResponse({"status": "error", "message": "HF and W&B API keys required."})
+            wandb_key = wandb_key_post if wandb_key_post else (DEFAULT_WANDB_API_KEY or "").strip()
+            hf_key = hf_key_post if hf_key_post else (DEFAULT_HF_API_KEY or "").strip()
+
+            # Debug log (non-sensitive): show whether keys were provided by form or defaults
+            source_wandb = "form" if bool(wandb_key_post) else ("default" if bool(DEFAULT_WANDB_API_KEY and DEFAULT_WANDB_API_KEY.strip()) else "missing")
+            source_hf = "form" if bool(hf_key_post) else ("default" if bool(DEFAULT_HF_API_KEY and DEFAULT_HF_API_KEY.strip()) else "missing")
+            print(f"[encoder_training] wandb_key source={source_wandb}, hf_key source={source_hf}")
+
+            if not (wandb_key and hf_key):
+                return JsonResponse({"status": "error", "message": "Encoder - HF and W&B API keys required."})
 
             wandb.login(key=wandb_key)
             wandb.init(project=project_name)

@@ -147,6 +147,18 @@
         value="FinGPT/fingpt-fiqa_qa">
     <br>
 
+        <label>
+            W&B API Key (Leave blank to use default):
+            <input type="text" name="wandb_key" />
+        </label>
+        <br>
+
+        <label>
+            Hugging Face API Key (Leave blank to use default):
+            <input type="text" name="hf_key" />
+        </label>
+        <br>
+
     <!-- Train-Test Split Ratio -->
     <label for="train_test_split_ratio">Train-Test Split Ratio:</label>
     <input type="number" step="0.01" id="train_test_split_ratio" name="train_test_split_ratio" value="0.1" min="0.01"
@@ -161,6 +173,14 @@
 <div id="log-container">Waiting for logs...</div>
 
 <script>
+    const encoderRadio = document.getElementById("encoder");
+    // track whether Encoder form is active
+    let isEncoder = encoderRadio.checked;
+    encoderRadio.addEventListener("change", e => {
+        isEncoder = encoderRadio.checked;
+        console.log("Is Encoder Training:", isEncoder);
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
         const modelNameSelect = document.getElementById('model_name');
         const customModelInput = document.getElementById('custom_model_name');
@@ -177,13 +197,15 @@
         });
 
         // Radio toggle logic
-        const encoderRadio = document.getElementById("encoder");
+        // const encoderRadio = document.getElementById("encoder");
         const decoderRadio = document.getElementById("decoder");
         const encoderForm = document.getElementById("encoder-form");
         const decoderForm = document.getElementById("decoder-form");
 
         function updateFormVisibility() {
-            if (encoderRadio.checked) {
+            // Keep the isEncoder flag in sync with the visible form
+            isEncoder = encoderRadio.checked;
+            if (isEncoder) {
                 encoderForm.style.display = "block";
                 decoderForm.style.display = "none";
             } else {
@@ -196,6 +218,8 @@
         encoderRadio.addEventListener("change", updateFormVisibility);
         decoderRadio.addEventListener("change", updateFormVisibility);
         updateFormVisibility();
+        console.log("Is Encoder");
+        console.log("Is Encoder Training:", encoderRadio.checked);
 
         function activateOtherModelLogic() {
             // Handle model name selection to show/hide custom model input
@@ -209,15 +233,18 @@
                 }
             });
         }
-        const form = document.getElementById("train-form");
+        const form = document.getElementById("train-form") 
+        const encoder_form = document.getElementById("encoder-train-form");
         const logContainer = document.getElementById("log-container");
         let eventSource;
+        console.log("Hello World 1");
+        function handleSubmit(event) {
+            console.log("Hello World 2");
 
-        form.addEventListener("submit", function (event) {
             event.preventDefault(); // Prevent default form submission
 
             // If "Other" is selected, use custom_model_name as model_name
-            if (modelNameSelect.value === 'other') {
+            if (modelNameSelect && modelNameSelect.value === 'other') {
                 const customModelName = customModelInput.value.trim();
                 if (!customModelName) {
                     logContainer.textContent = "❌ Error: Please enter a valid model name.\n";
@@ -234,10 +261,13 @@
                 eventSource = null;
             }
 
-            // Send form data to start training
-            fetch("/api/train_model/", {
+            // Send form data to start training (use existing Django routes)
+            console.log("Is Encoder Training:", isEncoder);
+            const endpoint = isEncoder ? "/api/train_encoder/" : "/api/train_model/";
+            const body = isEncoder ? new FormData(encoder_form) : new FormData(form);
+            fetch(endpoint, {
                 method: "POST",
-                body: new FormData(form),
+                body: body,
             })
             .then(response => response.json())
             .then(data => {
@@ -251,7 +281,11 @@
             .catch(error => {
                 logContainer.textContent += `⚠️ Request failed: ${error}\n`;
             });
-        });
+        }
+
+        // Attach submit handler to both forms so either encoder or decoder submission is handled
+        form.addEventListener("submit", handleSubmit);
+        encoder_form.addEventListener("submit", handleSubmit);
 
         function startLogStreaming() {
             if (eventSource) eventSource.close(); // Close existing connection
