@@ -17,9 +17,23 @@ import pandas as pd
 from dotenv import load_dotenv
 import shutil 
 
+
+import bitsandbytes as bnb
+
 import evaluate
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
+
+
+
+
+print(f"PyTorch: {torch.__version__}")
+print(f"CUDA: {torch.version.cuda}")
+print(f"GPU: {torch.cuda.get_device_name(0)}")
+
+# This check is crucial for your hardware
+# It should return True for Blackwell (sm_120) compatibility
+print(f"BitsAndBytes Supported: {bnb.is_supported()}")
 
 # Load environment variables
 load_dotenv(dotenv_path="../../.env") # path is relative to this script, adjust as needed
