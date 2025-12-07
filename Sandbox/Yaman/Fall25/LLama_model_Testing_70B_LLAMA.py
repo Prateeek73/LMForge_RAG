@@ -241,7 +241,10 @@ def update_detailed_tracker(detailed_tracker_path,chunk_size, max_tokens, key, v
 
 # Set up device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
+#model.to(device)
+
+
+
 
 # check if base directory exists, if not create it
 if not os.path.exists(run_id):
