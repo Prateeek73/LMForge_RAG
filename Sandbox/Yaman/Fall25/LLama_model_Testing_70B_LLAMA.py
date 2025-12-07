@@ -9,7 +9,7 @@ import torch
 import os
 import json
 from huggingface_hub import login
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import logging
 import time
 from datetime import timedelta, datetime
@@ -53,7 +53,23 @@ login(token=os.getenv("#"))
 # transformers.utils.hub.TRANSFORMERS_CACHE = "D:/huggingface_cache"
 
 
+
 model_name = "meta-llama/Llama-3.3-70B-Instruct"
 
+bnb_config = BitsAndBytesConfig(
+    load_in_8bit=True    
+)
+
+
+
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.float16, device_map="cuda", trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    quantization_config=bnb_config, 
+    device_map="auto",              
+    trust_remote_code=True
+)
+
+
+print("Model loaded successfully!")
+print(f"Memory footprint: {model.get_memory_footprint() / 1e9} GB")
