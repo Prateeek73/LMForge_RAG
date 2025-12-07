@@ -57,7 +57,8 @@ login(token=os.getenv("#"))
 model_name = "meta-llama/Llama-3.3-70B-Instruct"
 
 bnb_config = BitsAndBytesConfig(
-    load_in_8bit=True    
+    load_in_8bit=True,
+    llm_int8_enable_fp32_cpu_offload=True   
 )
 
 
