@@ -31,9 +31,20 @@ print(f"PyTorch: {torch.__version__}")
 print(f"CUDA: {torch.version.cuda}")
 print(f"GPU: {torch.cuda.get_device_name(0)}")
 
-# This check is crucial for your hardware
-# It should return True for Blackwell (sm_120) compatibility
-print(f"BitsAndBytes Supported: {bnb.is_supported()}")
+try:
+    # Create a dummy 8-bit layer on the GPU
+    layer = bnb.nn.Linear8bitLt(32, 32, has_fp16_weights=False, threshold=6.0).cuda()
+    
+    # Create dummy input
+    inp = torch.randn(1, 32).cuda().half() # half precision for Blackwell
+    
+    # Run a forward pass
+    out = layer(inp)
+    print("SUCCESS: BitsAndBytes 8-bit kernel executed correctly on this GPU.")
+    
+except Exception as e:
+    print("\nFAILURE: BitsAndBytes could not run on this GPU.")
+    print(f"Error details: {e}")
 
 # Load environment variables
 load_dotenv(dotenv_path="../../.env") # path is relative to this script, adjust as needed
