@@ -4,8 +4,65 @@
 {% block title %} Model Training {% endblock %}
 
 {% block content %}
+<head>
+  <style>
+    .radio-group {
+      display: flex;          /* puts items in one horizontal line */
+      gap: 10px;              /* space between the options */
+    }
+
+    .radio-group label {
+      cursor: pointer;        /* makes text clickable */
+    }
+  </style>
+</head>
 
 <h1>Configure Model Training</h1>
+<div class="radio-group">
+    <input type="radio" id="decoder" name="enc_dec" value="Decoder" checked>
+    <label for="decoder">Decoder</label>
+
+    <input type="radio" id="encoder" name="enc_dec" value="Encoder">
+    <label for="encoder">Encoder</label>
+
+</div>
+<div id="encoder-form" style="display:none; margin-top:20px;">
+    <form method="POST" action="" id="encoder-train-form">
+        {% csrf_token %}
+        <label for="model_name">Model Name</label>
+        <select id="encoder_model_name" name="model_name">
+        <option value="bert-base-uncased">BERT</option>
+        </select>
+        <br>
+        <label>Learning Rate:</label>
+        <input type="number" step="0.00001" name="learning_rate" value="2e-5">
+        <br>
+        <label>Number of Epochs:</label>
+        <input type="number" name="num_epochs" value="3">
+        <br>
+        <label>Batch Size:</label>
+        <input type="number" name="batch_size" value="1">
+        <br>
+        <label for="model_repo">Model Repository Name:</label>
+        <input type="text" name="model_repo" placeholder="e.g., OpenFinAL/your-model-name">
+        <br>
+
+        <!-- Dataset Selection -->
+        <label for="dataset_name">Dataset Name:</label>
+        <input type="text" id="dataset_name" name="dataset_name" placeholder="e.g., FinGPT/fingpt-fiqa_qa"
+            value="FinGPT/fingpt-fiqa_qa">
+        <br>
+
+        <!-- Train-Test Split Ratio -->
+        <label for="train_test_split_ratio">Train-Test Split Ratio:</label>
+        <input type="number" step="0.01" id="train_test_split_ratio" name="train_test_split_ratio" value="0.1" min="0.01"
+            max="0.99">
+        <br>
+        <button type="submit">Start Training</button>
+    </form>
+</div>
+
+<div id="decoder-form" style="margin-top:20px;">
 <form method="POST" action="" id="train-form">
     {% csrf_token %}
     <label for="model_name">Model Name</label>
@@ -90,6 +147,18 @@
         value="FinGPT/fingpt-fiqa_qa">
     <br>
 
+        <label>
+            W&B API Key (Leave blank to use default):
+            <input type="text" name="wandb_key" />
+        </label>
+        <br>
+
+        <label>
+            Hugging Face API Key (Leave blank to use default):
+            <input type="text" name="hf_key" />
+        </label>
+        <br>
+
     <!-- Train-Test Split Ratio -->
     <label for="train_test_split_ratio">Train-Test Split Ratio:</label>
     <input type="number" step="0.01" id="train_test_split_ratio" name="train_test_split_ratio" value="0.1" min="0.01"
@@ -98,12 +167,24 @@
 
     <button type="submit">Start Training</button>
 </form>
+</div>
 
 <h2>Training Logs</h2>
 <div id="log-container">Waiting for logs...</div>
 
 <script>
+    const encoderRadio = document.getElementById("encoder");
+    // track whether Encoder form is active
+    let isEncoder = encoderRadio.checked;
+    encoderRadio.addEventListener("change", e => {
+        isEncoder = encoderRadio.checked;
+        console.log("Is Encoder Training:", isEncoder);
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
+        const modelNameSelect = document.getElementById('model_name');
+        const customModelInput = document.getElementById('custom_model_name');
+
         // Initialize hidden precision fields
         document.getElementById('fp16').value = 'off';
         document.getElementById('bf16').value = 'off';
@@ -115,28 +196,55 @@
             document.getElementById('bf16').value = (precision === 'bf16') ? 'on' : 'off';
         });
 
-         // Handle model name selection to show/hide custom model input
-        const modelNameSelect = document.getElementById('model_name');
-        const customModelInput = document.getElementById('custom_model_name');
-        customModelInput.style.display = 'none'; // Hide by default
-        modelNameSelect.addEventListener('change', function () {
-            if (this.value === 'other') {
-                customModelInput.style.display = 'block';
-            } else {
-                customModelInput.style.display = 'none';
-                customModelInput.value = ''; // Clear custom input when not in use
-            }
-        });
+        // Radio toggle logic
+        // const encoderRadio = document.getElementById("encoder");
+        const decoderRadio = document.getElementById("decoder");
+        const encoderForm = document.getElementById("encoder-form");
+        const decoderForm = document.getElementById("decoder-form");
 
-        const form = document.getElementById("train-form");
+        function updateFormVisibility() {
+            // Keep the isEncoder flag in sync with the visible form
+            isEncoder = encoderRadio.checked;
+            if (isEncoder) {
+                encoderForm.style.display = "block";
+                decoderForm.style.display = "none";
+            } else {
+                encoderForm.style.display = "none";
+                decoderForm.style.display = "block";
+                activateOtherModelLogic();
+            }
+        }
+
+        encoderRadio.addEventListener("change", updateFormVisibility);
+        decoderRadio.addEventListener("change", updateFormVisibility);
+        updateFormVisibility();
+        console.log("Is Encoder");
+        console.log("Is Encoder Training:", encoderRadio.checked);
+
+        function activateOtherModelLogic() {
+            // Handle model name selection to show/hide custom model input
+            customModelInput.style.display = 'none'; // Hide by default
+            modelNameSelect.addEventListener('change', function () {
+                if (this.value === 'other') {
+                    customModelInput.style.display = 'block';
+                } else {
+                    customModelInput.style.display = 'none';
+                    customModelInput.value = ''; // Clear custom input when not in use
+                }
+            });
+        }
+        const form = document.getElementById("train-form") 
+        const encoder_form = document.getElementById("encoder-train-form");
         const logContainer = document.getElementById("log-container");
         let eventSource;
+        console.log("Hello World 1");
+        function handleSubmit(event) {
+            console.log("Hello World 2");
 
-        form.addEventListener("submit", function (event) {
             event.preventDefault(); // Prevent default form submission
 
             // If "Other" is selected, use custom_model_name as model_name
-            if (modelNameSelect.value === 'other') {
+            if (modelNameSelect && modelNameSelect.value === 'other') {
                 const customModelName = customModelInput.value.trim();
                 if (!customModelName) {
                     logContainer.textContent = "❌ Error: Please enter a valid model name.\n";
@@ -153,10 +261,13 @@
                 eventSource = null;
             }
 
-            // Send form data to start training
-            fetch("/api/train_model/", {
+            // Send form data to start training (use existing Django routes)
+            console.log("Is Encoder Training:", isEncoder);
+            const endpoint = isEncoder ? "/api/train_encoder/" : "/api/train_model/";
+            const body = isEncoder ? new FormData(encoder_form) : new FormData(form);
+            fetch(endpoint, {
                 method: "POST",
-                body: new FormData(form),
+                body: body,
             })
             .then(response => response.json())
             .then(data => {
@@ -170,7 +281,11 @@
             .catch(error => {
                 logContainer.textContent += `⚠️ Request failed: ${error}\n`;
             });
-        });
+        }
+
+        // Attach submit handler to both forms so either encoder or decoder submission is handled
+        form.addEventListener("submit", handleSubmit);
+        encoder_form.addEventListener("submit", handleSubmit);
 
         function startLogStreaming() {
             if (eventSource) eventSource.close(); // Close existing connection
